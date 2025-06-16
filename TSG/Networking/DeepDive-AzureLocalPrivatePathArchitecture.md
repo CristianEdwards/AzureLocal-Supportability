@@ -4,9 +4,13 @@
 
 If you want to use Azure Local without exposing your on-premises environment to the public internet, you can use the Arc gateway and the Azure Firewall Explicit Proxy feature to route all Azure Local traffic securely through your private connection (ExpressRoute or Site-to-Site VPN) to Azure.
 
-This article explains the required components, the network flows and the steps to configure the Azure Local Private Path architecture.
+This article covers the following topics:
 
-### Key Benefits
+- Required components for Azure Local private path.
+- Outbound Network flows in Azure Local private path.
+- How to configure the Azure Local Private Path architecture.
+
+#### Key Benefits
 
 - **Better Security:** Keep Azure Local traffic within your On-premises network and Azure using Express Route or S2S VPNs.
 - **Easier Setup:** Leverage your existing network and security infrastructure while the Arc gateway manages Azure connectivity.
@@ -14,7 +18,7 @@ This article explains the required components, the network flows and the steps t
 
 This guide explains how outbound connections work with the Arc gateway and Azure Local, including detailed diagrams and configuration requirements.
 
-### Prerequisites and Network Requirements
+#### Prerequisites and Network Requirements
 
 - An existing Azure VNET without Azure Arc Private Link scope enabled. Other Private Link services such as Key Vault or Storage Private Links can be enabled on the VNET.
 - An existing Azure ExpressRoute or Site-to-Site VPN connection from the on-premises environment to the Azure VNET.
@@ -23,14 +27,14 @@ This guide explains how outbound connections work with the Arc gateway and Azure
 - An Azure Arc gateway resource within the same subscription where Azure Local nodes are being registered.
 - Azure Local version 2506 or later. Previous releases do not support private path architecture.
 
-### Restrictions and limitations
+#### Restrictions and limitations
 
 - This solution uses Azure Firewall Explicit Proxy as a forward proxy. Azure Local does not support TLS inspection on the required endpoints.
 - TLS certificates can't be applied to the Azure Firewall Explicit Proxy.
 
 ---
 
-## Azure Local Private Path Required components
+## Required components for Azure Local private path
 
 The following diagram introduces the core components involved in Azure Local private path:
 
@@ -47,13 +51,14 @@ The following diagram introduces the core components involved in Azure Local pri
 ![Azure Local with Arc gateway outbound connectivity](./images/0-1NodePrivatePathComponents.dark.svg)
 
 ---
-## Types of Network Traffic and Routing with Azure Local private path
+
+## Outbound Network flows in Azure Local private path
 
 When using Azure Local private path, operating system (OS) and Arc Resource Bridge appliance VM network traffic is categorized based on how it should be routed. Clearly distinguishing these categories helps administrators correctly configure network routing rules, ensuring secure, efficient, and compliant connectivity between on-premises infrastructure and Azure services over Azure ExpressRoute or Site to Site VPNs.
 
-### Traffic Categories:
+### Traffic Categories
 
-1. **🟦 OS HTTP and HTTPS traffic that must bypass Azure Firewall Explicit Proxy** 
+1. **🟦 OS HTTP and HTTPS traffic that must bypass Azure Firewall Explicit Proxy**
    Specific HTTP and HTTPS connections that should not pass through Azure Firewall Explicit Proxy. Instead, these connections directly reach their intended internal destinations, typically due to technical requirements or performance considerations. Private Link endpoints such as Key Vault or Storage accounts should be also added to the proxy bypass list if your organization requires their usage.
 
 2. **🟨 OS HTTP traffic that cannot use Arc proxy and must be sent to Azure Firewall Explicit Proxy**  
@@ -174,7 +179,7 @@ This ensures Azure Local VMs have secure, controlled, and compliant outbound con
 ### Step 1 - Create the Arc gateway resource in your subscription
 
 The first step we must complete to enable the Azure Local private path Arc is to create the Arc gateway resource in our Azure subscription.
-Create the Arc gateway resource in Azure
+#### Create the Arc gateway resource in Azure
 
 1. Sign in to Azure portal.
 2. Go to the Azure Arc > Azure Arc gateway page, then select Create.
@@ -262,20 +267,48 @@ Outbound traffic from your On-prem network is now routed through the integrated 
 
 > **⚠️ Important Note:**  
 > For details on required URLs, see [Azure Local Arc gateway required endpoints](https://learn.microsoft.com/en-us/azure/azure-local/deploy/deployment-azure-arc-gateway-overview?view=azloc-2505&tabs=portal#azure-local-endpoints-not-redirected), or use the list of endpoints provided in the table below.  
->   
+>
 > The following is an example of how the destination string should be formatted if you choose to use a single rule to include all endpoints. Alternatively, you can create separate rules for each endpoint:
-> 
+>
 > ```
-> login.microsoftonline.com,management.azure.com,gbl.his.arc.azure.com,ae.his.arc.azure.com,mykevault.vault.azure.net,*.windowsupdate.com,*.windowsupdate.microsoft.com,*.update.microsoft.com,yourarcgwid.gw.arc.azure.com,*.microsoft.com,onegetcdn.azureedge.net,dc.services.visualstudio.com,*.digicert.com,*.globalsign.com,*.ws.symantec.com,*.symcd.com
+> aka.ms,azurestackreleases.download.prss.microsoft.com,login.microsoftonline.com,<region>.login.microsoft.com,management.azure.com,gbl.his.arc.azure.com,<region>.his.arc.azure.com,dc.services.visualstudio.com,<region>.obo.arc.azure.com,<yourarcgatewayId>.gw.arc.azure.com,<yourkeyvaultname>.vault.azure.net,<yourblobstorageforcloudwitnessname>.blob.core.windows.net,ocsp.digicert.com,s.symcd.com,ts-ocsp.ws.symantec.com,ocsp.globalsign.com,ocsp2.globalsign.com,oneocsp.microsoft.com,crl.microsoft.com,dl.delivery.mp.microsoft.com,*.tlu.dl.delivery.mp.microsoft.com,*.windowsupdate.com,*.windowsupdate.microsoft.com,*.update.microsoft.com
 > ```
 
 ![Application Rule Example](./images/ApplicationRuleExample.png)
 
 ### Step 4 - Bootstrap and Arc registration of your nodes via private path
 
-Once Arc gateway is created and Azure Firewall Explicit Proxy configuration and routing is completed on the Azure side, it is time to set up our Azure Local nodes to work on this private path scenario. Depending on how flexible or enforced is the outbound traffic from the On-prem network, you have two options to configure each of your nodes to work with Azure Firewall and Arc gateway. As described in the diagram below, if the on-prem direct internet outbound traffic is allowed, you can use option 1 to directly authenticate in Azure, configure your proxy and do the Arc registration in a single step. However, in many cases, Internet outbound connectivity on the on-prem locations is enforced to go via proxy over the express route circuit. If that is the scenario, then you can use option 2, where OS proxy configuration must be done before we can start the Arc registration process. This will be the only way to get access to Azure and do the required authentication for the Arc registration and enabling the Arc gateway connectivity.
+Once Arc gateway is created, Azure Firewall Explicit Proxy is configured and Azure ExpressRoute routing is completed on the Azure side, it is time to set up your Azure Local nodes to work on this private path scenario. You can register each of your nodes using the Arc initialization script or the Companion App. Regardless of the method you use for the nodes Arc registration, make sure you include the Arc gateway id, the Azure Firewall internal IP and port as proxy server and the proxy bypass list for the traffic you don't want to send over proxy.
+
+#### Example of Azure Local private path Arc registration using Configurator App
+
+Image here
+
+#### Example of Azure Local private path Arc registration using Arc initialization script during bootstrap.
 
 
+```azurepowershell
+# Define the subscription where you want to register your server as an Arc device
+$Subscription = "yoursubscriptionid"
+
+# Define the resource group where you want to register your server as an Arc device
+$RG = "yourresourcegroup"
+
+# Define the tenant ID used to register your server as an Arc device
+$Tenant = "yourtenantid"
+
+# Define your proxy server if required (Azure Firewall internal IP and port)
+$ProxyServer = "http://azurefirewallinternalIP:port"
+
+# Define the Arc gateway resource ID from Azure
+$ArcgwId = "yourArcgwid"
+
+# Define the proxy bypass list for traffic that should not go through the proxy
+$ProxyBypassList = "*.contoso.com,node1,node2,node3,node4,node5,192.168.1.*,192.168.2.*,HCICabrils1,HCICabrils2,HCICabrils3,HCICabrils4,HCICabrils5"
+
+# Invoke Arc initialization for Azure Local nodes
+Invoke-AzStackHciArcInitialization -SubscriptionID $Subscription -ResourceGroup $RG -TenantID $tenant -Region "<yourregion>" -Cloud "AzureCloud" -Proxy $ProxyServer -ProxyBypass $ProxyBypassList -ArcGatewayID $ArcgwId
+```
 ---
 ## Summary of the Overall Connectivity Model
 
