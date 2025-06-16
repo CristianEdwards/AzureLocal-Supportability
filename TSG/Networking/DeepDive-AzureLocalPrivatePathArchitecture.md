@@ -60,7 +60,7 @@ When using Azure Local private path, operating system (OS) and Arc Resource Brid
    HTTP traffic is incompatible with the Arc proxy. This traffic must instead be routed through Azure Firewall Explicit Proxy, ensuring compliance with internal security policies.
 
 3. **🟩 OS HTTPS traffic that always uses Arc proxy**  
-   HTTPS traffic that must always be routed through the Arc proxy. This ensures secure, controlled, and consistent connectivity to Azure endpoints, leveraging the Arc gateway's built-in security and management capabilities. Make sure you allow all the endpoints required for Arc gateway in Azure Local listed here: ![Azure Local required endpoints for Arc gateway](https://learn.microsoft.com/en-us/azure/azure-local/deploy/deployment-azure-arc-gateway-overview?view=azloc-2505&tabs=portal#azure-local-endpoints-not-redirected)
+   HTTPS traffic that must always be routed through the Arc proxy. This ensures secure, controlled, and consistent connectivity to Azure endpoints, leveraging the Arc gateway's built-in security and management capabilities. Make sure you allow all the endpoints required for Arc gateway in Azure Local listed here: https://learn.microsoft.com/en-us/azure/azure-local/deploy/deployment-azure-arc-gateway-overview?view=azloc-2505&tabs=portal#azure-local-endpoints-not-redirected
 
 4. **🟥 Third-party OS HTTPS traffic not permitted through Arc gateway**
    All HTTPS traffic from the operating system initially goes to the Arc proxy. However, the Arc gateway only permits connections to Microsoft-managed endpoints. This means that HTTPS traffic destined for third-party services—such as OEM endpoints, hardware vendor update services, or other third-party agents installed on your servers, cannot pass through the Arc gateway. Instead, this traffic is redirected to Azure Firewall Explicit Proxy. To ensure these third-party services function correctly, you must explicitly configure Azure firewall Explicit Proxy Application Rules to allow access to these external endpoints based on your organization's requirements.
@@ -189,7 +189,57 @@ Once the Arc gateway is created, the URL gets assigned. Take note of this URL be
 
 ![Arc gateway URL](./images/Arcgatewaycreation.png)
 
-You can also create an Arc gateway resource using Azure CLI, or Azure PowerShell. Please refer to the the Azure Local Arc gateway documentation if using the Azure Portal to create the Arc gateway is not an option. Overview of Azure Arc gateway for Azure Local, version 23H2 (preview) - Azure Local | Microsoft Learn
+You can also create an Arc gateway resource using Azure CLI, or Azure PowerShell. Please refer to the the Azure Local Arc gateway documentation if using the Azure Portal to create the Arc gateway is not an option. Overview of Azure Arc gateway for Azure Local, version 23H2 (preview) - Azure Local | Microsoft Learn https://learn.microsoft.com/en-us/azure/azure-local/deploy/deployment-azure-arc-gateway-overview?view=azloc-24112&tabs=portal#create-the-arc-gateway-resource-in-azure
+
+### Step 2 - Create the Azure Firewall instance in your Azure VNET without Azure Arc Private Link Scope Enabled.
+
+#### Prerequisites
+
+To deploy an Azure Firewall instance into an existing virtual network, you need a subnet called AzureFirewallSubnet.
+
+1. In the Azure portal, navigate to the **virtual network** where you plan to deploy your Azure Firewall instance.
+2. From the left navigation, select **Subnets > + Subnet**.
+3. In **Name**, type AzureFirewallSubnet.
+4. **Subnet address range**, accept the default or specify a range that's at least /26 in size.
+5. Select **Save**.
+
+#### Deploy the Azure Firewall instance and get its private IP
+
+1. On the Azure portal menu or from the Home page, select **Create a resource**.
+2. Type firewall in the search box and press **Enter**.
+3. Select **Firewall** and then select **Create**.
+4. On the **Create a Firewall** page, configure the firewall as shown in the following table:
+
+|Setting|Value|
+|-------|-----|
+|Resource Group|Same Resource Group as of the selected Virtual Network|
+|Name|Name of your choice|
+|Region|Same region as the selected Virtual Network|
+|Availability zone|Select your availability zone option|
+|Virtual network|Select the integrated virtual network|
+|Public IP Address|Select an existing address or create one by selecting **“Add new”**|
+|Firewall tier|Select **Standard** or **Premium** tier to support Explicit Proxy feature|
+|Firewall management|Select **“Use a Firewall Policy to manage this firewall”**|
+|Firewall policy|Create one by selecting **"Add new"**|
+|Firewall management NIC|Leave this option unselected|
+
+![Azure Firewall creation](./images/AzureFirewallCreation.png)
+
+5. Click **Review + create**
+6. Select **Create** again. This will take a few minutes to deploy.
+7. After deployment is completed, go to your resource group, and select the firewall.
+8. In the firewall's Overview page, copy private IP address. The private IP address will be used as next hop address in the routing rule for the virtual network and it will also be used as Azure Local machines proxy.
+
+![Azure Firewall internal ip](./images/AzureFirewallInternalIP.png)
+
+### Step 3 - Enable Explicit proxy feature
+
+1. Navigate to your Azure Firewall resource, then go to the Firewall Policy.
+2. In Settings, navigate to the Explicit Proxy (Preview) pane.
+3. Select Enable Explicit Proxy.
+4. Enter the desired values for the HTTP and HTTPS ports.
+ Note: It's common to use 8080 for the HTTP Port, and 8443 for the HTTPS port.
+5. Select Apply to save the changes.
 
 ---
 ## Summary of the Overall Connectivity Model
