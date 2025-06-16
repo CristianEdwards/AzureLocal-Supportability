@@ -60,7 +60,7 @@ When using Azure Local private path, operating system (OS) and Arc Resource Brid
    HTTP traffic is incompatible with the Arc proxy. This traffic must instead be routed through Azure Firewall Explicit Proxy, ensuring compliance with internal security policies.
 
 3. **🟩 OS HTTPS traffic that always uses Arc proxy**  
-   HTTPS traffic that must always be routed through the Arc proxy. This ensures secure, controlled, and consistent connectivity to Azure endpoints, leveraging the Arc gateway's built-in security and management capabilities. Make sure you allow all the endpoints required for Arc gateway in Azure Local listed here: https://learn.microsoft.com/en-us/azure/azure-local/deploy/deployment-azure-arc-gateway-overview?view=azloc-2505&tabs=portal#azure-local-endpoints-not-redirected
+   HTTPS traffic that must always be routed through the Arc proxy. This ensures secure, controlled, and consistent connectivity to Azure endpoints, leveraging the Arc gateway's built-in security and management capabilities. Make sure you allow all the endpoints required for Arc gateway in Azure Local listed here: [Azure Local Arc gateway required endpoints](https://learn.microsoft.com/en-us/azure/azure-local/deploy/deployment-azure-arc-gateway-overview?view=azloc-2505&tabs=portal#azure-local-endpoints-not-redirected)
 
 4. **🟥 Third-party OS HTTPS traffic not permitted through Arc gateway**
    All HTTPS traffic from the operating system initially goes to the Arc proxy. However, the Arc gateway only permits connections to Microsoft-managed endpoints. This means that HTTPS traffic destined for third-party services—such as OEM endpoints, hardware vendor update services, or other third-party agents installed on your servers, cannot pass through the Arc gateway. Instead, this traffic is redirected to Azure Firewall Explicit Proxy. To ensure these third-party services function correctly, you must explicitly configure Azure firewall Explicit Proxy Application Rules to allow access to these external endpoints based on your organization's requirements.
@@ -175,21 +175,22 @@ This ensures Azure Local VMs have secure, controlled, and compliant outbound con
 
 The first step we must complete to enable the Azure Local private path Arc is to create the Arc gateway resource in our Azure subscription.
 Create the Arc gateway resource in Azure
-1.	Sign in to Azure portal.
-2.	Go to the Azure Arc > Azure Arc gateway page, then select Create.
-3.	Select the subscription and resource group where you want the Arc gateway resource to be managed within Azure. An Arc gateway resource can be used by any Arc-enabled resource in the same Azure tenant.
-4.	For Name, enter the name for the Arc gateway resource.
-5.	For Location, enter the region where the Arc gateway resource should live. An Arc gateway resource can be used by any Arc-enabled resource in the same Azure tenant.
-6.	Select Next.
-7.	On the Tags page, specify one or more custom tags to support your standards.
-8.	Select Review & Create.
-9.	Review your details, and then select Create.
+
+1. Sign in to Azure portal.
+2. Go to the Azure Arc > Azure Arc gateway page, then select Create.
+3. Select the subscription and resource group where you want the Arc gateway resource to be managed within Azure. An Arc gateway resource can be used by any Arc-enabled resource in the same Azure tenant.
+4. For Name, enter the name for the Arc gateway resource.
+5. For Location, enter the region where the Arc gateway resource should live. An Arc gateway resource can be used by any Arc-enabled resource in the same Azure tenant.
+6. Select Next.
+7. On the Tags page, specify one or more custom tags to support your standards.
+8. Select Review & Create.
+9. Review your details, and then select Create.
 The gateway creation process takes nine to ten minutes to complete.
 Once the Arc gateway is created, the URL gets assigned. Take note of this URL because you will need to allow HTTPS traffic to this endpoint in your Azure Firewall application rules.
 
 ![Arc gateway URL](./images/Arcgatewaycreation.png)
 
-You can also create an Arc gateway resource using Azure CLI, or Azure PowerShell. Please refer to the the Azure Local Arc gateway documentation if using the Azure Portal to create the Arc gateway is not an option. Overview of Azure Arc gateway for Azure Local, version 23H2 (preview) - Azure Local | Microsoft Learn https://learn.microsoft.com/en-us/azure/azure-local/deploy/deployment-azure-arc-gateway-overview?view=azloc-24112&tabs=portal#create-the-arc-gateway-resource-in-azure
+You can also create an Arc gateway resource using Azure CLI, or Azure PowerShell. Please refer to the the Azure Local Arc gateway documentation if using the Azure Portal to create the Arc gateway is not an option. [Overview of Azure Arc gateway for Azure Local](https://learn.microsoft.com/en-us/azure/azure-local/deploy/deployment-azure-arc-gateway-overview?view=azloc-24112&tabs=portal#create-the-arc-gateway-resource-in-azure)
 
 ### Step 2 - Create the Azure Firewall instance in your Azure VNET without Azure Arc Private Link Scope Enabled.
 
@@ -234,12 +235,46 @@ To deploy an Azure Firewall instance into an existing virtual network, you need 
 
 ### Step 3 - Enable Explicit proxy feature
 
-1. Navigate to your Azure Firewall resource, then go to the Firewall Policy.
-2. In Settings, navigate to the Explicit Proxy (Preview) pane.
-3. Select Enable Explicit Proxy.
-4. Enter the desired values for the HTTP and HTTPS ports.
- Note: It's common to use 8080 for the HTTP Port, and 8443 for the HTTPS port.
+1. Navigate to your Azure Firewall resource, then go to the **Firewall Policy**.
+2. In **Settings**, navigate to the **Explicit Proxy (Preview)** pane.
+3. Select **Enable Explicit Proxy.**
+4. Enter the desired TCP port for both HTTP and HTTPS traffic.
 5. Select Apply to save the changes.
+
+#### Configure the Azure Firewall policies
+
+Outbound traffic from your On-prem network is now routed through the integrated virtual network to the firewall. To control outbound traffic, add an application rule to firewall policy.
+
+1. Navigate to the applicable firewall policy.
+2. In **Settings**, navigate to the **Application Rules** pane.
+3. Select **Add** a rule collection.
+4. Provide a **Name** for the rule collection.
+5. Set the **Rule collection type to Application**
+6. Set the rule **Priority** based on other rules you may have.
+7. Set the **Rule collection type to Allow**.
+8. Select the **Rule collection group** where you want to include your rules.
+9. Set the **Name** of your rule.
+10. For the **Source**, enter “*”, or any source IPs you may have.
+11. Set **Protocol** as http:80,https:443.
+12. Set **Destination Type** to FQDN
+13. Set **Destination** as a comma-separated list of URLs required for your scenario.
+14. Select **Add** to save the rule collection and rule.
+
+> **⚠️ Important Note:**  
+> For details on required URLs, see [Azure Local Arc gateway required endpoints](https://learn.microsoft.com/en-us/azure/azure-local/deploy/deployment-azure-arc-gateway-overview?view=azloc-2505&tabs=portal#azure-local-endpoints-not-redirected), or use the list of endpoints provided in the table below.  
+>   
+> The following is an example of how the destination string should be formatted if you choose to use a single rule to include all endpoints. Alternatively, you can create separate rules for each endpoint:
+> 
+> ```
+> login.microsoftonline.com,management.azure.com,gbl.his.arc.azure.com,ae.his.arc.azure.com,mykevault.vault.azure.net,*.windowsupdate.com,*.windowsupdate.microsoft.com,*.update.microsoft.com,yourarcgwid.gw.arc.azure.com,*.microsoft.com,onegetcdn.azureedge.net,dc.services.visualstudio.com,*.digicert.com,*.globalsign.com,*.ws.symantec.com,*.symcd.com
+> ```
+
+![Application Rule Example](./images/ApplicationRuleExample.png)
+
+### Step 4 - Bootstrap and Arc registration of your nodes via private path
+
+Once Arc gateway is created and Azure Firewall Explicit Proxy configuration and routing is completed on the Azure side, it is time to set up our Azure Local nodes to work on this private path scenario. Depending on how flexible or enforced is the outbound traffic from the On-prem network, you have two options to configure each of your nodes to work with Azure Firewall and Arc gateway. As described in the diagram below, if the on-prem direct internet outbound traffic is allowed, you can use option 1 to directly authenticate in Azure, configure your proxy and do the Arc registration in a single step. However, in many cases, Internet outbound connectivity on the on-prem locations is enforced to go via proxy over the express route circuit. If that is the scenario, then you can use option 2, where OS proxy configuration must be done before we can start the Arc registration process. This will be the only way to get access to Azure and do the required authentication for the Arc registration and enabling the Arc gateway connectivity.
+
 
 ---
 ## Summary of the Overall Connectivity Model
