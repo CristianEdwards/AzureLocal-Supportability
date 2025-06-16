@@ -187,7 +187,7 @@ Create the Arc gateway resource in Azure
 The gateway creation process takes nine to ten minutes to complete.
 Once the Arc gateway is created, the URL gets assigned. Take note of this URL because you will need to allow HTTPS traffic to this endpoint in your Azure Firewall application rules.
 
-
+![Arc gateway URL](./images/Arcgatewaycreation.png)
 
 You can also create an Arc gateway resource using Azure CLI, or Azure PowerShell. Please refer to the the Azure Local Arc gateway documentation if using the Azure Portal to create the Arc gateway is not an option. Overview of Azure Arc gateway for Azure Local, version 23H2 (preview) - Azure Local | Microsoft Learn
 
