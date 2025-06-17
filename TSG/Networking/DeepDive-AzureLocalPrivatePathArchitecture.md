@@ -1,4 +1,4 @@
-# Azure Local private path architecture Deep Dive
+# Azure Local private path architecture (Public Preview) Deep Dive
 
 ## Overview
 
