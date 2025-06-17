@@ -32,6 +32,7 @@ This guide explains how outbound connections work with the Arc gateway and Azure
 - This solution uses Azure Firewall Explicit Proxy as a forward proxy. Azure Local does not support TLS inspection on the required endpoints.
 - TLS certificates can't be applied to the Azure Firewall Explicit Proxy.
 
+> **⚠️ Important Note:**  Any other variation of the Azure Local private path architecture different from what is described in this article has not been validated by Microsoft and will not be supported.
 ---
 
 ## Required components for Azure Local private path
