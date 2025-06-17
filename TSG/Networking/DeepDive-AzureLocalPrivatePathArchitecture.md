@@ -20,7 +20,7 @@ This guide explains how outbound connections work with the Arc gateway and Azure
 
 #### Prerequisites and Network Requirements
 
-- An existing Azure VNET without Azure Arc Private Link scope enabled. Other Private Link services such as Key Vault or Storage Private Links can be enabled on the VNET.
+- An existing Azure VNET without Azure Arc Private Link Scope enabled. (Note: Other Private Link services, such as Azure Key Vault or Azure Storage, can still be enabled.)
 - An existing Azure ExpressRoute or Site-to-Site VPN connection from the on-premises environment to the Azure VNET.
 - An Azure Firewall instance configured on the VNET without Azure Arc Private Link scope enabled.
 - Network routing configured to allow Azure Local nodes to connect to the Azure VNET and subnets over ExpressRoute or S2S VPN.
@@ -39,13 +39,21 @@ This guide explains how outbound connections work with the Arc gateway and Azure
 The following diagram introduces the core components involved in Azure Local private path:
 
 - **Azure Local Instance:** Your on-premises Azure Local cluster.
+  
 - **Nodes:** Individual servers within your Azure Local instance.
+
 - **Arc Proxy (on Arc connected machine agent):** A local proxy service running on each node, responsible for securely routing HTTPS traffic through the Arc gateway.
-- **Arc Gateway Public Endpoint:** The Arc gateway instance must be created and configured on the same subscription where Azure Local nodes are registered. Once the Arc gateway resource is created, make sure the endpoint is allowed in your Azure Firewall policy application rule.
+
+- **Arc Gateway Public Endpoint:** The Arc gateway resource must be created in the same Azure subscription as your Azure Local nodes. After creation, ensure the Arc gateway endpoint URL is explicitly allowed in your Azure Firewall Application Rules.
+
 - **Enterprise Firewall:** Your organization's existing security infrastructure controlling outbound traffic.
+
 - **Azure ExpressRoute:** The Express Route circuit is the communication path between the on-prem networks and Azure VNETs. Azure Local nodes traffic must be routed over express route to reach the Azure VNET. It is important to ensure that before Arc registration and enabling the Arc gateway, all nodes have network connectivity to the VNET and the subnets where Azure Firewall is running. All nodes must be able to reach the Azure Firewall private ip, as this will become the proxy endpoint for HTTP and HTTPS traffic from the nodes and the Arc proxy service.
+
 - **Azure VNET:** Before deploying an Azure Firewall instance, an Azure VNET must be created with the corresponding subnets. At least one workloads subnet and one Azure Firewall subnet must be created. Azure Local does not support Azure Arc Private Link Scopes, and it is not supported to enable Azure Arc private link Scope on the VNET where Azure Firewall as explicit proxy is running. If Azure Arc for servers Private Link Scope is required for your workloads, a separate VNET with Azure Arc Private Link Scope configuration must be used.
+
 - **Azure Firewall Explicit Proxy:** The Azure Firewall instance deployed on its own subnet should be configured as explicit proxy and the required Azure Local endpoints for Arc gateway scenarios should be allowed on the corresponding Azure Firewall policy Application Rules.
+
 - **Azure Public Endpoints:** Azure services (e.g., Azure Resource Manager, Key Vault, Microsoft Graph) required by your local environment.
 
 ![Azure Local with Arc gateway outbound connectivity](./images/0-1NodePrivatePathComponents.dark.svg)
@@ -401,6 +409,7 @@ If you already have a Log Analytics workspace in your subscription where Azure F
 5. Select the Resource specific option for the Destination table and click save
 
 ![AzureMonitorSetup1](./images/AzureMonitorAZFWStep1.png)
+
 ![AzureMonitorSetup2](./images/AzureMonitorAZFWStep2.png)
 
 Once the diagnostic settings are configured and after waiting few minutes, you can start monitoring your Azure Firewall Explicit Proxy traffic under the Logs section by using the AZFWApplicationRule query.
@@ -410,10 +419,15 @@ Note that most of your outbound traffic must be using your Arc gateway endpoint 
 ![AzureMonitorSetup3](./images/AzureMonitorAZFWStep3.png)
 
 ---
-## Summary of the Overall Connectivity Model
+## Summary
 
-- **Allowed HTTPS traffic** is securely tunneled through the Arc gateway, significantly reducing firewall rules required (fewer than 30 endpoints).
-- **Non-allowed traffic** (highlighted in pink in diagrams) is redirected to Azure Firewall Explicit Proxy for inspection and enforcement.
-- **Internal and Private Link traffic** bypasses proxies entirely, ensuring efficient local communication.
+This article provided a comprehensive overview of configuring Azure Local private path architecture using Azure Arc gateway and Azure Firewall Explicit Proxy. By routing Azure Local traffic securely through private connections such as ExpressRoute or Site-to-Site VPN, organizations can significantly enhance security, simplify network management, and reduce administrative overhead.
 
-This structured approach simplifies network management, enhances security, and ensures compliance with organizational policies.
+Key points covered include:
+
+- **Architecture Components:** Understanding the core components required, including Azure Local nodes, Arc gateway, Azure Firewall Explicit Proxy, and Azure networking infrastructure.
+- **Traffic Categorization:** Clearly distinguishing between different types of network traffic (internal, HTTP, HTTPS, third-party) and their appropriate routing paths.
+- **Configuration Steps:** Detailed guidance on setting up Azure Firewall Explicit Proxy, creating firewall rules, registering Azure Local nodes via Arc gateway, and configuring proxy bypass lists.
+- **Validation and Monitoring:** Instructions for validating proxy configurations across various system components and enabling monitoring through Azure Log Analytics for effective troubleshooting and compliance.
+
+By following this structured approach, IT administrators can ensure secure, efficient, and compliant connectivity between their on-premises Azure Local environments and Azure services, while leveraging existing network infrastructure and security policies.
