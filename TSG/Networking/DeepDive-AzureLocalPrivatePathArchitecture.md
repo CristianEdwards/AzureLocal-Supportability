@@ -278,20 +278,23 @@ Outbound traffic from your On-prem network is now routed through the integrated 
 
 ### Step 4 - Bootstrap and Arc registration of your nodes via private path
 
-Once Arc gateway is created, Azure Firewall Explicit Proxy is configured and Azure ExpressRoute routing is completed on the Azure side, it is time to set up your Azure Local nodes to work on this private path scenario. You can register each of your nodes using the Arc initialization script or the Companion App. Regardless of the method you use for the nodes Arc registration, make sure you include the Arc gateway id, the Azure Firewall internal IP and port as proxy server and the proxy bypass list for the traffic you don't want to send over proxy.
+Once Arc gateway is created, Azure Firewall Explicit Proxy is configured and Azure ExpressRoute routing is completed on the Azure side, it is time to set up your Azure Local nodes to work on this private path scenario. You can register each of your nodes using the Arc initialization script or the Companion App. Regardless of the method you use for the nodes Arc registration, make sure you include the Arc gateway Id, the Azure Firewall internal IP and port as proxy server and the proxy bypass list for the traffic you don't want to send over proxy.
 
 #### Example of Azure Local private path Arc registration using Configurator App
 
-![ConfiguratorAppArcRegistration](./images/ConfiguratorAppArcgwSetup.png)
+![CompanionAppArcProxySetup](./images/CompanionAppProxySetup.png)
 
-#### Define the bypass list for the proxy. Use comma to separate each item from the list.
+#### ⚠️ Important proxy bypass list string considerations
+>
+> - Use "localhost" instead of "<<local>local>" 
+> - Use specific IPs such as 127.0.0.1 without mask 
+> - Use * for subnets allowlisting. 192.168.1.* for /24 exclusions. Use 192.168.*.* for /16 exclusions.
+> - Append * before domain names like *.contoso.com to bypass a an entire domain. 
+> - DO NOT INCLUDE .svc on the list. The registration script takes care of Environment Variables configuration.
 
-> ⚠️ Important
->- Use "localhost" instead of <local> 
->- Use specific IPs such as 127.0.0.1 without mask 
->- Use * for subnets allowlisting. 192.168.1.* for /24 exclusions. Use 192.168.*.* for /16 exclusions.
->- Append * before domain names like *.contoso.com to bypass a an entire domain. 
->- DO NOT INCLUDE .svc on the list. The registration script takes care of Environment Variables configuration.
+![CompanionAppArcgwSetup](./images/CompanionAppArcgwSetup.png)
+
+#### ⚠️ Make sure you add the Arc gateway Id information as part of the Azure Arc agent setup.
 
 #### Example of Azure Local private path Arc registration using Arc initialization script during bootstrap.
 
@@ -320,14 +323,91 @@ $ProxyBypassList = "*.contoso.com,node1,node2,node3,node4,node5,192.168.1.*,192.
 Invoke-AzStackHciArcInitialization -SubscriptionID $Subscription -ResourceGroup $RG -TenantID $tenant -Region "<yourregion>" -Cloud "AzureCloud" -Proxy $ProxyServer -ProxyBypass $ProxyBypassList -ArcGatewayID $ArcgwId
 ```
 
-> ⚠️ Important
->- Use "localhost" instead of <local> 
->- Use specific IPs such as 127.0.0.1 without mask 
->- Use * for subnets allowlisting. 192.168.1.* for /24 exclusions. Use 192.168.*.* for /16 exclusions.
->- Append * before domain names like *.contoso.com to bypass a an entire domain. 
->- DO NOT INCLUDE .svc on the list. The registration script takes care of Environment Variables configuration.
+#### ⚠️ Important proxy bypass list string considerations
+>
+> - Use "localhost" instead of "<<local>local>" 
+> - Use specific IPs such as 127.0.0.1 without mask 
+> - Use * for subnets allowlisting. 192.168.1.* for /24 exclusions. Use 192.168.*.* for /16 exclusions.
+> - Append * before domain names like *.contoso.com to bypass a an entire domain. 
+> - DO NOT INCLUDE .svc on the list. The registration script takes care of Environment Variables configuration.
 
-### Step 5 - Validate that proxy configuration on the OS and the Arc agent is ready for Azure Firewall and Arc gateway
+### Step 5 - Validate that proxy configuration on the OS and the Arc agent is ready for Azure Firewall and Arc gateway after Arc registration is completed
+
+To ensure that private path traffic from On-prem Azure Local machines to Azure Firewall and Arc gateway is properly configured you need to ensure that WinInet, WinHTTP, Environment Variables and Arc agent has the right proxy configuration.
+
+#### To validate WinHTTP proxy configuration run the following command on your Azure Local machine
+
+![ValidateWinHTTPProxyConfiguration](./images/WinHTTPValidation.png)
+
+- Make sure that on the Proxy Servers configuration the HTTP proxy is set to you Azure Firewall HTTP endpoint. For example, http://10.0.43.4:8080
+  
+- Make sure that on the Proxy Servers configuration the HTTPS proxy is set to use http://localhost:40343. This is the Arc proxy service from the Arc agent responsible for creating the tunneling with Arc gateway in Azure.
+  
+-  Review that the ProxyBypass string is properly configured, where each parameters must be separated with semicolon, subnets exclusions use * as wildcard and domain names uses * at the beginning of the name. This notation is specific for WinHTTP and WinINET proxy bypass string configuration
+
+#### To validate WinINET proxy configuration run the following command on your Azure Local machine
+
+![ValidateWinINETProxyConfiguration](./images/WinINETValidation.png)
+
+- Make sure that on the Proxy Servers configuration the HTTP proxy is set to you Azure Firewall HTTP endpoint. For example, http://10.0.43.4:8080
+  
+- Make sure that on the Proxy Servers configuration the HTTPS proxy is set to use http://localhost:40343. This is the Arc proxy service from the Arc agent responsible for creating the tunneling with Arc gateway in Azure.
+
+- Review that the ProxyBypass string is properly configured, where each parameters must be separated with semicolon, subnets exclusions use * as wildcard and domain names uses * at the beginning of the name. This notation is specific for WinHTTP and WinINET proxy bypass string configuration
+
+#### To validate Environment Variables proxy configuration run the following command on your Azure Local machine
+
+![EnvironmentVariablesProxyConfiguration](./images/EnvVarValidation.png)
+
+- Make sure that on the HTTP variable the proxy is set to you Azure Firewall HTTP endpoint. For example, http://10.0.43.4:8080
+
+- Make sure that on the HTTPS variable the proxy is set to use http://localhost:40343. This is the Arc proxy service from the Arc agent responsible for creating the tunneling with Arc gateway in Azure.
+
+- Review that the ProxyBypass string is properly configured. For environment variable is important to review that values are comma-separated, and wildcards are defined as “.” Preceding the value. For example, .contoso.com or .svc. Subnets exclusions must use CIDR notation instead of using * as wildcard.
+
+#### To validate Azure Arc agent proxy configuration run the following command on your Azure Local machine
+
+![ArcAgentProxyConfiguration](./images/ArcAgentValidation.png)
+
+- Make sure that Using HTTPS Proxy value is set to the Arc proxy endpoint http://localhost:40343. This is the Arc proxy service from the Arc agent responsible for creating the tunneling with Arc gateway in Azure.
+
+- Make sure that on the Upstream Proxy value is set to use your Azure Firewall HTTPS proxy endpoint. For example, http://10.0.43.4:8443. 
+
+---
+
+## Start Azure Local deployment
+
+At this point, both the Azure side and the On-prem Azure Local Machines are ready to start the deployment over a private path. You can start the deployment following one of the two options available in public documentation.
+
+1. Deploy from Azure Portal - Deploy an Azure Local instance using the Azure portal - Azure Local | Microsoft Learn
+
+2.	Deploy using ARM templates - Azure Resource Manager template deployment for Azure Local, version 23H2 - Azure Local | Microsoft Learn
+
+
+---
+
+## Monitor outbound traffic on Azure Firewall
+
+If you already have a Log Analytics workspace in your subscription where Azure Firewall is running, you can enable specific monitoring to track the Explicit proxy application rules.
+
+1. Go to your Azure Firewall resource and under **Monitoring**, open the **Diagnostic settings**.
+
+2. Click on + **add diagnostic setting**
+
+3. On the diagnostic setting configuration page select at least the Azure Firewall Application Rule log. We also recommend selecting the Azure Firewall Network Rule and the Azure Firewall Flow trace log in case they are required for deeper monitoring and troubleshooting.
+
+4. On the Destination details select to send to log Analytics workspace and select your subscription and your Log Analytics Workspace.
+
+5. Select the Resource specific option for the Destination table and click save
+
+![AzureMonitorSetup1](./images/AzureMonitorAZFWStep1.png)
+![AzureMonitorSetup2](./images/AzureMonitorAZFWStep2.png)
+
+Once the diagnostic settings are configured and after waiting few minutes, you can start monitoring your Azure Firewall Explicit Proxy traffic under the Logs section by using the AZFWApplicationRule query.
+
+Note that most of your outbound traffic must be using your Arc gateway endpoint as Fqdn.
+
+![AzureMonitorSetup3](./images/AzureMonitorAZFWStep3.png)
 
 ---
 ## Summary of the Overall Connectivity Model
