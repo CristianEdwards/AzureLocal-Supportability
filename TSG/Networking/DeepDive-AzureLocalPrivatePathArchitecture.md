@@ -282,33 +282,53 @@ Once Arc gateway is created, Azure Firewall Explicit Proxy is configured and Azu
 
 #### Example of Azure Local private path Arc registration using Configurator App
 
-Image here
+![ConfiguratorAppArcRegistration](./images/ConfiguratorAppArcgwSetup.png)
+
+#### Define the bypass list for the proxy. Use comma to separate each item from the list.
+
+> ⚠️ Important
+>- Use "localhost" instead of <local> 
+>- Use specific IPs such as 127.0.0.1 without mask 
+>- Use * for subnets allowlisting. 192.168.1.* for /24 exclusions. Use 192.168.*.* for /16 exclusions.
+>- Append * before domain names like *.contoso.com to bypass a an entire domain. 
+>- DO NOT INCLUDE .svc on the list. The registration script takes care of Environment Variables configuration.
 
 #### Example of Azure Local private path Arc registration using Arc initialization script during bootstrap.
 
 
 ```azurepowershell
-# Define the subscription where you want to register your server as an Arc device
+#Define the subscription where you want to register your server as an Arc device
 $Subscription = "yoursubscriptionid"
 
-# Define the resource group where you want to register your server as an Arc device
+#Define the resource group where you want to register your server as an Arc device
 $RG = "yourresourcegroup"
 
-# Define the tenant ID used to register your server as an Arc device
+#Define the tenant ID used to register your server as an Arc device
 $Tenant = "yourtenantid"
 
-# Define your proxy server if required (Azure Firewall internal IP and port)
+#Define your proxy server if required (Azure Firewall internal IP and port)
 $ProxyServer = "http://azurefirewallinternalIP:port"
 
-# Define the Arc gateway resource ID from Azure
+#Define the Arc gateway resource ID from Azure
 $ArcgwId = "yourArcgwid"
 
-# Define the proxy bypass list for traffic that should not go through the proxy
+#Define the bypass list for the proxy. Use comma to separate each item from the list
+
 $ProxyBypassList = "*.contoso.com,node1,node2,node3,node4,node5,192.168.1.*,192.168.2.*,HCICabrils1,HCICabrils2,HCICabrils3,HCICabrils4,HCICabrils5"
 
 # Invoke Arc initialization for Azure Local nodes
 Invoke-AzStackHciArcInitialization -SubscriptionID $Subscription -ResourceGroup $RG -TenantID $tenant -Region "<yourregion>" -Cloud "AzureCloud" -Proxy $ProxyServer -ProxyBypass $ProxyBypassList -ArcGatewayID $ArcgwId
 ```
+
+> ⚠️ Important
+>- Use "localhost" instead of <local> 
+>- Use specific IPs such as 127.0.0.1 without mask 
+>- Use * for subnets allowlisting. 192.168.1.* for /24 exclusions. Use 192.168.*.* for /16 exclusions.
+>- Append * before domain names like *.contoso.com to bypass a an entire domain. 
+>- DO NOT INCLUDE .svc on the list. The registration script takes care of Environment Variables configuration.
+
+### Step 5 - Validate that proxy configuration on the OS and the Arc agent is ready for Azure Firewall and Arc gateway
+
 ---
 ## Summary of the Overall Connectivity Model
 
