@@ -112,6 +112,8 @@ When defining your proxy bypass string for your Arc initialization script or whe
 
 ![Azure Local Node OS Traffic Bypassing Proxy](./images/1-1NodeIntranetBypassFlow.dark.svg)
 
+![Azure Local Node OS Traffic Bypassing Proxy](./images/TestingMultiPages-Components.drawio.svg)
+
 ---
 
 ### 2. Azure Local private path Node OS HTTP Traffic via Azure Firewall Explicit Proxy
