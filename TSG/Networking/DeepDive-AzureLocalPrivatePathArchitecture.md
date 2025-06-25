@@ -57,6 +57,7 @@ The following diagram introduces the core components involved in Azure Local pri
 
 - **Azure Public Endpoints:** Azure services (e.g., Azure Resource Manager, Key Vault, Microsoft Graph) required by your local environment.
 
+
 ![Azure Local with Arc gateway outbound connectivity](./images/0-1NodePrivatePathComponents.dark.svg)
 
 ---
@@ -111,8 +112,6 @@ When defining your proxy bypass string for your Arc initialization script or whe
 - The use of <local> strings isn't supported in the proxy bypass list.
 
 ![Azure Local Node OS Traffic Bypassing Proxy](./images/1-1NodeIntranetBypassFlow.dark.svg)
-
-![Azure Local Node OS Traffic Bypassing Proxy](./images/TestingMultiPages-Components.drawio.svg)
 
 ---
 
