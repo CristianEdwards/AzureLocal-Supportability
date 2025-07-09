@@ -253,8 +253,10 @@ To deploy an Azure Firewall instance into an existing virtual network, you need 
 1. Navigate to your Azure Firewall resource, then go to the **Firewall Policy**.
 2. In **Settings**, navigate to the **Explicit Proxy (Preview)** pane.
 3. Select **Enable Explicit Proxy.**
-4. Enter the desired TCP port for both HTTP and HTTPS traffic.
+4. Enter the desired TCP port for the explicit proxy. This port will proxy traffic for both HTTP and HTTPS.
 5. Select Apply to save the changes.
+
+![Azure Firewall Explicit Proxy Configuration](./images/AzureFirewallExplicitProx.png)
 
 #### Configure the Azure Firewall policies
 
