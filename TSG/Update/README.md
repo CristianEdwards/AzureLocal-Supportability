@@ -18,3 +18,5 @@
 * [Update Hangs after Secret Rotation](./Update-Hangs-after-Secret-Rotation.md)
 * [Update fails due to missing DeploymentLaunchType registry key](./Missing-DeploymentLaunchType-regkey-fails-update.md)
 * [OS update automatically set to run on 3rd Tuesday following SBE update](./OS-update-automatically-set-to-run-on-3rd-Tuesday-following-SBE-update.md)
+* [Solution Update UpdateFOD error.md](./SolutionUpdate-UpdateFOD.md)
+* [Update fails with Exception caught in Test-AzStackHciNetwork validator](./Update-fails-with-Exception-caught-in-Test-AzStackHciNetwork-validator.md)

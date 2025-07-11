@@ -4,7 +4,14 @@ When trying to Arc Register the new node, user sees the error code 42.
 # Error: 
 Bootstrap reported error: A ArcAgentConnectionException error occurred with the message: 'AZCMAgent command failed with error:  >> exitcode: 42. Additional Info: See https://aka.ms/arc/azcmerror'
 
-# Issue Validation
+# Potential causes
+1. Az.Accounts version on the system is incorrect.
+2. ARM access token is expired.
+3. ARM access token is passed incorrectly.
+
+# 1. Az.Accounts version on the system is incorrect
+
+## Issue Validation
 Run this cmdlet on each node to see what powershell module versions are present
 `Get-InstalledModule Az.Accounts`
 
@@ -41,8 +48,35 @@ If there are any versions besides expected version, they need to be removed.
  
  4. **Verify only 4.0.2 is present:**
     ```powershell
+
     Get-InstalledModule -Name Az.Accounts -AllVersions
     ```
  
   Note: You may need to run PowerShell as Administrator.
 
+
+  # 2. ARM Access token is expired
+
+  ## Issue validation
+
+  If the token was created more than 1h before using it for registration, this could be a likely cause for the error.
+
+  ## Resolution
+  
+  Create a new ARM access token and trigger bootstrap again to see if the error resolves.
+
+  **Creating an ARM Access Token**
+    
+    $token = (Get-AzAccessToken).token
+
+# 3. ARM access token is passed incorrectly
+
+  ## Issue Validation
+  Sometimes, AZCMAGENT Error 42 is seen when the ARM Access token is not passed correctly. One reason for this could be that the token is being passed as an object instead of a string.
+
+  ## Resolution
+
+  Pass only the 'token' property of the ARM access token object
+      
+    $token = (Get-AzAccessToken).token
+    

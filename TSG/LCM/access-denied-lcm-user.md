@@ -107,7 +107,7 @@ Invoke-Command -ComputerName $targetIp -Credential $credential -Authentication C
 If there are no issues running the previous script, then proceed to **Step 3**, otherwise:
 
 1. If no Invoke-Command works (with or without CredSSP), double check you have entered the right LCM user credentials. If you are certain they are correct, then check the [WinRM Trusted Hosts configuration](#winrm-trusted-hosts-configuration) is set up properly to include all hostnames and IPs of all nodes in your cluster.
-2. If Invoke-Command without CredSSP works, but CredSSP does not work, try [resetting the CredSSP registry keys](#reset-credssp-registry-keys).
+2. If Invoke-Command without CredSSP works, but CredSSP does not work, please review the [CredSsp-Authentication-Issues Doc](../Security/CredSsp-Authentication-Issues.md).
 3. If Invoke-Command with hostname works, but using the IP does not work, ensure the [WinRM Trusted Hosts configuration](#winrm-trusted-hosts-configuration) is set up properly to include all IPs of all nodes in your cluster and that a Group Policy Object (GPO) [is not blocking NTLM](#check-ntlm-is-not-blocked-by-gpo).
  
 ### Step 3: Verify the LCM credential in AD matches ECE Store
@@ -365,22 +365,6 @@ $eceParams = $interface.GetInterfaceParameters()
 $securityInfo = $ECEParams.Roles["Cloud"].PublicConfiguration.PublicInfo.SecurityInfo
 $DAdmin = $securityInfo.DomainUsers.User | Where Role -eq "DomainAdmin"
 Write-Output "Your LCM username is: $($DAdmin.Credential.Credential.UserName)"
-```
-
-### Reset CredSSP Registry Keys
-```Powershell
-# Set properties of CredentialsDelegation key
-Set-ItemProperty -Path HKLM:\SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation -Name AllowFreshCredentials -Value 1 -Type DWORD -Force
-Set-ItemProperty -Path HKLM:\SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation -Name AllowFreshCredentialsWhenNTLMOnly -Value 1 -Type DWORD -Force
-Set-ItemProperty -Path HKLM:\SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation -Name ConcatenateDefaults_AllowFresh -Value 1 -Type DWORD -Force
-Set-ItemProperty -Path HKLM:\SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation -Name ConcatenateDefaults_AllowFreshNTLMOnly -Value 1 -Type DWORD -Force
-
-# Create CredentialsDelegation sub-keys, if needed
-New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentials" -ItemType Directory -Force
-New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentialsWhenNTLMOnly" -ItemType Directory -Force
-# Set properties of CredentialsDelegation sub-keys
-Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentials" -Name "1" -Value "wsman/*" -Type String -Force
-Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentialsWhenNTLMOnly" -Name "1" -Value "wsman/*" -Type String -Force
 ```
 
 ### Check NTLM is not Blocked by GPO
