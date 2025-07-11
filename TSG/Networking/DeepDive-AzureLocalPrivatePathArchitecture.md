@@ -160,8 +160,10 @@ This ensures ARB appliance VM traffic is securely managed and compliant with you
 
 This diagram shows HTTPS traffic handling for Azure Kubernetes Service (AKS) clusters within Azure Local:
 
-- AKS clusters route HTTPS traffic through the Cluster IP proxy.
+- AKS cluster Control Plane VM routes HTTPS traffic through the Cluster IP proxy on port 40343.
+- AKS Worker Node VM routes HTTPS traffic through the Cluster IP proxy on port 40343.
 - The Cluster IP proxy securely forwards allowed traffic through the Arc gateway's HTTPS tunnel to Azure endpoints.
+- AKS Pods creates the Arc gateway connection to route HTTPS traffic over the Arc gateway HTTP connect tunnel.
 - Traffic not permitted by the Arc gateway is sent to your firewall/proxy for further security checks.
 
 This ensures AKS clusters maintain secure and compliant outbound connectivity.
@@ -177,6 +179,7 @@ This diagram explains HTTPS traffic handling for Azure Local virtual machines (V
 - Each Azure Local VM uses its own dedicated Arc proxy to route HTTPS traffic.
 - Allowed HTTPS traffic is securely tunneled through the Arc gateway to Azure public endpoints.
 - Non-allowed traffic is redirected to Azure Firewall Explicit Proxy for security enforcement.
+- VM traffic using Key Vault Private Link has the Key Vault FQDN configured on DNS to use Private Link.
 
 This ensures Azure Local VMs have secure, controlled, and compliant outbound connectivity.
 
